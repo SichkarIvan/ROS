@@ -17,8 +17,8 @@ class Client_name(Node):
         request = SummFullName.Request()
 
         request.first_name = n1
-        request.name = n1
-        request.last_name = n1
+        request.name = n2
+        request.last_name = n3
 
         req_res = self.client_.call_async(request)
         rclpy.spin_until_future_complete(self, req_res)

@@ -15,20 +15,17 @@ class MoveToGoal(Node):
         super().__init__("move_to_goal_node")
 
         self._cmd_vel_pub = self.create_publisher(Twist, "/turtle1/cmd_vel", 10)
-        self._pose_sub    = self.create_subscription(Pose, "/turtle1/pose", self.pose_callback, 0)
-        self.pose_data    = Pose(x=5.54, y=5.54, theta=0.)
+        self._pose_sub    = self.create_subscription(Pose, "/turtle1/pose", self.pose_callback, 10)
+        self.pose_data    = Pose()
         
     def pose_callback(self, msg):
         self.pose_data = msg
 
     def __call__(self, x, y, theta):
-        self._move_to_goal(x, y, theta)
-
-    def _is_moving(self): # Cycle 'while' while turtle is moving
-        self.get_logger().info(f"{self._get_turtle_pos()}")
-        while(self._get_turtle_pos().linear_velocity or self._get_turtle_pos().angular_velocity):
-            time.sleep(0.1)
-        time.sleep(3) # костыль потому что pose 
+        self.target_x = x
+        self.target_y = y
+        self.target_theta = theta
+        self._timer = self.create_timer(1, self._move_to_goal)
         
     def _get_turtle_pos(self):
         return self.pose_data
@@ -39,12 +36,10 @@ class MoveToGoal(Node):
         msg.angular.z = angle_speed
 
         self._cmd_vel_pub.publish(msg)
-        time.sleep(0.5) # self._is_moving()
 
-    def _move_to_goal(self, x, y, theta):
+    def _move_to_goal(self):
+        x, y, theta = self.target_x, self.target_y, self.target_theta
         start_position = self._get_turtle_pos()
-        self.get_logger().info(f"Start position: {start_position.x} {start_position.y} {start_position.theta}")
-        self.get_logger().info(f"Goal: {x} {y} {theta}")
 
         x_d = x - start_position.x
         y_d = y - start_position.y
@@ -52,20 +47,18 @@ class MoveToGoal(Node):
         dst_target = m.sqrt(x_d**2 + y_d**2)
         ang_target = m.atan2(y_d, x_d) - start_position.theta
 
-        self.get_logger().info(f"\t{dst_target} {ang_target}")
+        self.get_logger().info(f"Pos {dst_target} {ang_target}")
 
         if(abs(dst_target) > 0.1):
-            if(abs(ang_target) > 0.1):
-                self._send_turtle_msg(angle_speed=ang_target)
-            self._send_turtle_msg(dst_target)
-        
-        ang_target = theta - ang_target
-
-        if(abs(ang_target) > 0.1):
+            self._send_turtle_msg(dst_target * 0.6, ang_target)
+        else:
+            self._timer.destroy()
+            final_pos = self._get_turtle_pos()
+            ang_target = theta - final_pos.theta
             self._send_turtle_msg(angle_speed=ang_target)
-
-        final_pos = self._get_turtle_pos()
-        self.get_logger().info(f"End position: {final_pos.x} {final_pos.y} {final_pos.theta}")
+            time.sleep(1)
+            final_pos = self._get_turtle_pos()
+            self.get_logger().info(f"End position: {final_pos.x} {final_pos.y} {final_pos.theta}")
 
 def main():
     rclpy.init()

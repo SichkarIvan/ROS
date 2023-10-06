@@ -43,11 +43,11 @@ class TurtleAction(Node):
                 goal_handle.publish_feedback(feedback_msg)
                 time.sleep(0.5)
         elif(cmd == "turn_right"):
-            cmd_vel_msg.angular.z = -m_pi/2
+            cmd_vel_msg.angular.z = -goal_handle.request.angle /180 * m_pi
             self._cmd_vel_pub.publish(cmd_vel_msg)
             goal_handle.publish_feedback(feedback_msg)
         elif(cmd == "turn_left"):
-            cmd_vel_msg.angular.z = m_pi/2
+            cmd_vel_msg.angular.z = goal_handle.request.angle /180 * m_pi
             self._cmd_vel_pub.publish(cmd_vel_msg)
             goal_handle.publish_feedback(feedback_msg)
 

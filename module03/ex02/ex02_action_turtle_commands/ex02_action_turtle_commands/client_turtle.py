@@ -27,6 +27,7 @@ class TurtleActionClient(Node):
         self.goal_future = self._action_client.send_goal_async(goal_msg)
         self.goal_future.add_done_callback(self.goal_callback)
         self.working = True
+        return self.goal_future
 
     def goal_callback(self, future):
         goal_handle = future.result()
@@ -50,12 +51,12 @@ def main():
 
     tac = TurtleActionClient()
 
-    tac.send_goal("forward", 3)
-    time.sleep(4)
-    tac.send_goal("turn_right", angle=90)
-    time.sleep(4)
-    tac.send_goal("forward", 1)
-    time.sleep(4)
+    future = tac.send_goal("forward", 3)
+    rclpy.spin_until_future_complete(tac, future)
+    future = tac.send_goal("turn_right", angle=90)
+    rclpy.spin_until_future_complete(tac, future)
+    future = tac.send_goal("forward", 1)
+    rclpy.spin_until_future_complete(tac, future)
 
     rclpy.spin(tac)
 
